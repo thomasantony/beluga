@@ -35,6 +35,7 @@ class NecessaryConditions(object):
         self.parameter_list = []
         self.bc_initial = []
         self.bc_terminal = []
+        
         from .. import Beluga # helps prevent cyclic imports
         self.compile_list = ['deriv_func','bc_func','compute_control']
         self.template_prefix = Beluga.config.getroot()+'/beluga/bvpsol/templates/'
@@ -118,6 +119,19 @@ class NecessaryConditions(object):
         #     rate = diff(sympify2('-1*(' + self.ham + ')'),state)
         #     # numerical_diff = rate.atoms(Derivative)
         #     self.costate_rates.append(str(rate))
+
+        # Create complex version (to be defined in template)
+        states_c = [sympify2(str(state)+'_c') for state in states]
+
+        # Complex version of Hamiltonian expression
+        ham_c = self.ham.subs(zip(states, states_c))
+
+        # Complex step
+        _h = sympify2('1j*(1e-30)')
+
+        # self.costate_rates = [(self.ham.subs(state.sym, state.sym+_h))/1e-30 for state in states]
+        # self.costate_rates = ['('+str(lamdot)+').imag' for lamdot in self.costate_rates]
+
         self.costate_rates = [self.derivative(-1*(self.ham),state, self.quantity_vars) for state in states]
         # self.costate_rates.append(str(diff(sympify2(
         # '-1*(' + self.ham + ')'),state)))
@@ -132,7 +146,7 @@ class NecessaryConditions(object):
         """
 
         self.ham_ctrl_partial = []
-        # keyboard()
+
         for ctrl in controls:
             dHdu = self.derivative(sympify2(self.ham), ctrl, self.quantity_vars)
             custom_diff = dHdu.atoms(Derivative)
@@ -181,6 +195,7 @@ class NecessaryConditions(object):
         udot = dgdU.LUsolve(-dgdX*xdot); # dgdU * udot + dgdX * xdot = 0
 
         self.dae_states = U
+
         self.dae_equations = list(udot)
         self.dae_bc = g
 
@@ -220,9 +235,6 @@ class NecessaryConditions(object):
             # 3. Find alfa from constraint expr
             logging.info("Attempting using SymPy ...")
             logging.debug("dHdu = "+str(eqn_list))
-
-            # keyboard()
-            # var_sol = solve(eqn_list[1:], var_list, dict=True)
 
             # Add to quantity list
             var_sol = []
@@ -578,6 +590,7 @@ class NecessaryConditions(object):
         # Substitute all quantities that show up in other quantities with their expressions
         # TODO: Sanitize quantity expressions
         # TODO: Check for circular references in quantity expressions
+
         if len(problem.quantity()) > 0:
             quantity_subs = [(sympify2(qty.var), sympify2(qty.value)) for qty in problem.quantity()]
             quantity_sym, quantity_expr = zip(*quantity_subs)
@@ -710,6 +723,7 @@ class NecessaryConditions(object):
          'deriv_list':
              ['(tf)*(' + str(sympify2(state.process_eqn)) + ')' for state in problem.states()] +
              ['(tf)*(' + str(costate_rate) + ')' for costate_rate in self.costate_rates] +
+            #  ['(tf)*((' + str(costate_rate) + ').imag)' for costate_rate in self.costate_rates] +
              ['tf*0']   # TODO: Hardcoded 'tf'
          ,
          'dae_var_list':
@@ -734,7 +748,8 @@ class NecessaryConditions(object):
         self.compiled = imp.new_module('_probobj_'+problem.name)
 
         if mode == 'dae':
-            self.template_suffix = '_dae' + self.template_suffix
+            # self.template_suffix = '_dae' + self.template_suffix
+            self.template_suffix = '_dae_num' + self.template_suffix
 
         compile_result = [self.compile_function(self.template_prefix+func+self.template_suffix, verbose=True)
                                         for func in self.compile_list]
