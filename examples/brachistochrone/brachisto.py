@@ -7,6 +7,7 @@ import beluga.bvpsol.algorithms as algorithms
 import beluga.optim.Problem
 from beluga.optim.problem import *
 from beluga.continuation import *
+import logging
 
 def get_problem():
     """Brachistochrone example."""
@@ -21,9 +22,9 @@ def get_problem():
     problem.independent('t', 's')
 
     # Define equations of motion
-    problem.state('x', 'v*cos(theta)','m')   \
-           .state('y', '-v*sin(theta)','m')   \
-           .state('v', 'g*sin(theta)','m/s')
+    problem.state('x', 'v*cos(theta)', 'm')   \
+           .state('y', '-v*sin(theta)', 'm')   \
+           .state('v', 'g*sin(theta)', 'm/s')
     # Define controls
     problem.control('theta','rad')
 
@@ -51,11 +52,9 @@ def get_problem():
                    .unit('kg',1)   \
                    .unit('rad',1)
 
-    problem.bvp_solver = algorithms.MultipleShooting(derivative_method='csd',tolerance=1e-4, max_iterations=1000, verbose = True, cached=False, number_arcs=4, max_error=100)
-    # problem.bvp_solver = algorithms.SingleShooting(derivative_method='fd',tolerance=1e-4, max_iterations=50, verbose = True, cached=False)
+    # problem.bvp_solver = algorithms.MultipleShooting(derivative_method='fd',tolerance=1e-4, max_iterations=1000, verbose = True, cached=False, number_arcs=4, max_error=100)
+    problem.bvp_solver = algorithms.SingleShooting(derivative_method='fd',tolerance=1e-4, max_iterations=50, verbose = True, cached=False)
     # problem.bvp_solver = algorithms.BroydenShooting(tolerance=1e-4, max_iterations=1000)
-
-    problem.mode = 'analytic'
 
     # Can be array or function handle
     # TODO: implement an "initial guess" class subclassing Solution
@@ -71,7 +70,7 @@ def get_problem():
     problem.steps.add_step('bisection') \
                     .num_cases(31) \
                     .terminal('x', 5) \
-                    .terminal('y',-5)
+                    .terminal('y', -5)
 
     # (
     # problem.steps.add_step().num_cases(2)
@@ -86,4 +85,4 @@ def get_problem():
     return problem
 
 if __name__ == '__main__':
-    Beluga.run(get_problem())
+    Beluga.run(get_problem(), display_level=logging.DEBUG)
