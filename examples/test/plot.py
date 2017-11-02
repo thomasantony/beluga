@@ -6,6 +6,7 @@ plots = BelugaPlot('./data.dill',default_sol=-1,default_step=-1, renderer='matpl
 #                 .xlabel('x(t)').ylabel('y(t)')      \
 #                 .title('Trajectory')
 plots.add_plot().line('xbar','ybar',label='traj1')                    \
+                .line('xbar','ylim',label='limit') \
                 .xlabel('x(t)').ylabel('y(t)')      \
                 .title('Trajectory') \
                 .postprocess(lambda a,b,c: plt.axis('equal'))
